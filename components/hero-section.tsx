@@ -10,6 +10,11 @@ import { Search, TrendingUp, Users, BookOpen, Sparkles } from "lucide-react"
 export function HeroSection() {
   const [searchQuery, setSearchQuery] = useState("")
   const [currentWordIndex, setCurrentWordIndex] = useState(0)
+  const [stats, setStats] = useState([
+    { icon: Users, label: "Active Writers", value: "0" },
+    { icon: BookOpen, label: "Articles Published", value: "0" },
+    { icon: TrendingUp, label: "Monthly Readers", value: "0" },
+  ])
 
   const rotatingWords = ["Developers", "Engineers", "Creators", "Innovators", "Builders"]
 
@@ -20,11 +25,55 @@ export function HeroSection() {
     return () => clearInterval(interval)
   }, [])
 
-  const stats = [
-    { icon: Users, label: "Active Writers", value: "10K+" },
-    { icon: BookOpen, label: "Articles Published", value: "50K+" },
-    { icon: TrendingUp, label: "Monthly Readers", value: "1M+" },
-  ]
+  // Fetch real statistics from backend
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const [usersRes, articlesRes] = await Promise.all([
+          fetch("http://localhost:3000/users"),
+          fetch("http://localhost:3000/articles")
+        ])
+
+        let userCount = 0
+        let articleCount = 0
+        let totalViews = 0
+
+        if (usersRes.ok) {
+          const users = await usersRes.json()
+          userCount = users.length
+        }
+
+        if (articlesRes.ok) {
+          const articles = await articlesRes.json()
+          articleCount = articles.length
+          totalViews = articles.reduce((sum: number, article: any) => sum + (article.views || 0), 0)
+        }
+
+        setStats([
+          {
+            icon: Users,
+            label: "Active Writers",
+            value: userCount > 0 ? userCount.toString() : "0"
+          },
+          {
+            icon: BookOpen,
+            label: "Articles Published",
+            value: articleCount > 0 ? articleCount.toString() : "0"
+          },
+          {
+            icon: TrendingUp,
+            label: "Total Views",
+            value: totalViews > 0 ? totalViews.toLocaleString() : "0"
+          },
+        ])
+      } catch (error) {
+        console.error("Error fetching stats:", error)
+        // Keep default values on error
+      }
+    }
+
+    fetchStats()
+  }, [])
 
   const trendingTopics = ["React", "Next.js", "TypeScript", "AI/ML", "Web3", "DevOps"]
 

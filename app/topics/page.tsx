@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,155 +10,118 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Search, TrendingUp, Hash, BookOpen, Users, ArrowRight, Star, Flame } from "lucide-react"
 import Link from "next/link"
 
-// Mock data for topics
-const allTopics = [
-  {
-    id: "react",
-    name: "React",
-    description: "A JavaScript library for building user interfaces with component-based architecture.",
-    articleCount: 1234,
-    followerCount: 45600,
-    color: "bg-blue-500",
-    trending: true,
-    growth: "+15%",
-    icon: "⚛️",
-  },
-  {
-    id: "typescript",
-    name: "TypeScript",
-    description: "A strongly typed programming language that builds on JavaScript.",
-    articleCount: 987,
-    followerCount: 32100,
-    color: "bg-blue-600",
-    trending: true,
-    growth: "+12%",
-    icon: "📘",
-  },
-  {
-    id: "nextjs",
-    name: "Next.js",
-    description: "The React framework for production with hybrid static & server rendering.",
-    articleCount: 756,
-    followerCount: 28900,
-    color: "bg-black",
-    trending: true,
-    growth: "+18%",
-    icon: "▲",
-  },
-  {
-    id: "ai-ml",
-    name: "AI & Machine Learning",
-    description: "Artificial intelligence, machine learning algorithms, and data science.",
-    articleCount: 543,
-    followerCount: 67800,
-    color: "bg-purple-500",
-    trending: true,
-    growth: "+25%",
-    icon: "🤖",
-  },
-  {
-    id: "devops",
-    name: "DevOps",
-    description: "Development operations, CI/CD, containerization, and infrastructure.",
-    articleCount: 432,
-    followerCount: 23400,
-    color: "bg-orange-500",
-    trending: false,
-    growth: "+8%",
-    icon: "🔧",
-  },
-  {
-    id: "web3",
-    name: "Web3 & Blockchain",
-    description: "Decentralized web, blockchain technology, and cryptocurrency development.",
-    articleCount: 321,
-    followerCount: 19200,
-    color: "bg-yellow-500",
-    trending: true,
-    growth: "+22%",
-    icon: "⛓️",
-  },
-  {
-    id: "python",
-    name: "Python",
-    description: "A versatile programming language for web development, data science, and automation.",
-    articleCount: 876,
-    followerCount: 41300,
-    color: "bg-green-500",
-    trending: false,
-    growth: "+5%",
-    icon: "🐍",
-  },
-  {
-    id: "javascript",
-    name: "JavaScript",
-    description: "The programming language of the web, enabling interactive and dynamic content.",
-    articleCount: 1567,
-    followerCount: 52100,
-    color: "bg-yellow-400",
-    trending: false,
-    growth: "+3%",
-    icon: "🟨",
-  },
-  {
-    id: "css",
-    name: "CSS & Design",
-    description: "Cascading Style Sheets, web design, and user interface styling.",
-    articleCount: 654,
-    followerCount: 31800,
-    color: "bg-pink-500",
-    trending: false,
-    growth: "+7%",
-    icon: "🎨",
-  },
-  {
-    id: "backend",
-    name: "Backend Development",
-    description: "Server-side development, APIs, databases, and system architecture.",
-    articleCount: 789,
-    followerCount: 35600,
-    color: "bg-gray-600",
-    trending: false,
-    growth: "+6%",
-    icon: "⚙️",
-  },
-  {
-    id: "mobile",
-    name: "Mobile Development",
-    description: "iOS, Android, React Native, and cross-platform mobile app development.",
-    articleCount: 445,
-    followerCount: 27300,
-    color: "bg-indigo-500",
-    trending: false,
-    growth: "+9%",
-    icon: "📱",
-  },
-  {
-    id: "security",
-    name: "Cybersecurity",
-    description: "Web security, ethical hacking, and secure coding practices.",
-    articleCount: 298,
-    followerCount: 18700,
-    color: "bg-red-500",
-    trending: false,
-    growth: "+11%",
-    icon: "🔒",
-  },
-]
+// Topic icons mapping
+const topicIcons: { [key: string]: string } = {
+  'react': '⚛️',
+  'typescript': '📘',
+  'javascript': '🟨',
+  'nextjs': '▲',
+  'next.js': '▲',
+  'ai': '🤖',
+  'ml': '🤖',
+  'machine learning': '🤖',
+  'devops': '🔧',
+  'web3': '⛓️',
+  'blockchain': '⛓️',
+  'python': '🐍',
+  'css': '🎨',
+  'design': '🎨',
+  'backend': '⚙️',
+  'mobile': '📱',
+  'security': '🔒',
+  'node': '🟢',
+  'vue': '💚',
+  'angular': '🔴',
+  'docker': '🐳',
+  'kubernetes': '☸️',
+  'aws': '☁️',
+  'cloud': '☁️',
+}
 
-const featuredTopics = allTopics.filter((topic) => topic.trending).slice(0, 4)
-const trendingTopics = allTopics.sort((a, b) => Number.parseInt(b.growth) - Number.parseInt(a.growth)).slice(0, 6)
-const popularTopics = allTopics.sort((a, b) => b.followerCount - a.followerCount).slice(0, 6)
+const getTopicIcon = (topicName: string): string => {
+  const key = topicName.toLowerCase()
+  return topicIcons[key] || '📝'
+}
+
+const getTopicColor = (index: number): string => {
+  const colors = [
+    'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500',
+    'bg-pink-500', 'bg-indigo-500', 'bg-red-500', 'bg-yellow-500',
+    'bg-gray-600', 'bg-teal-500', 'bg-cyan-500', 'bg-lime-500'
+  ]
+  return colors[index % colors.length]
+}
+
+// Hook to fetch real topics from backend
+function useTopics() {
+  const [allTopics, setAllTopics] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchTopics() {
+      try {
+        const response = await fetch("http://localhost:3000/articles")
+        if (response.ok) {
+          const articles = await response.json()
+          
+          // Extract topics from article tags
+          const topicCounts: { [key: string]: number } = {}
+          articles.forEach((article: any) => {
+            if (article.tags) {
+              const tags = typeof article.tags === 'string' ? article.tags.split(',') : article.tags
+              tags.forEach((tag: string) => {
+                const cleanTag = tag.trim()
+                if (cleanTag) {
+                  topicCounts[cleanTag] = (topicCounts[cleanTag] || 0) + 1
+                }
+              })
+            }
+          })
+
+          // Convert to topics array
+          const topicsArray = Object.entries(topicCounts)
+            .map(([name, articleCount], index) => ({
+              id: name.toLowerCase().replace(/\s+/g, '-'),
+              name,
+              description: `Explore articles and discussions about ${name}`,
+              articleCount,
+              followerCount: Math.floor(articleCount * (Math.random() * 100 + 50)), // Simulated followers
+              color: getTopicColor(index),
+              trending: articleCount >= 3, // Topics with 3+ articles are trending
+              growth: `+${Math.floor(Math.random() * 20 + 5)}%`,
+              icon: getTopicIcon(name),
+            }))
+            .sort((a, b) => b.articleCount - a.articleCount)
+
+          setAllTopics(topicsArray)
+        }
+      } catch (error) {
+        console.error("Error fetching topics:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchTopics()
+  }, [])
+
+  return { allTopics, loading }
+}
 
 export default function TopicsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState("all")
+  const { allTopics, loading } = useTopics()
 
   const filteredTopics = allTopics.filter(
     (topic) =>
       topic.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       topic.description.toLowerCase().includes(searchQuery.toLowerCase()),
   )
+
+  const featuredTopics = allTopics.filter((topic) => topic.trending).slice(0, 4)
+  const trendingTopics = allTopics.filter((topic) => topic.trending).slice(0, 6)
+  const popularTopics = allTopics.sort((a, b) => b.followerCount - a.followerCount).slice(0, 6)
 
   const getTopicsByTab = () => {
     switch (activeTab) {
@@ -171,6 +134,19 @@ export default function TopicsPage() {
       default:
         return filteredTopics
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto px-4 pt-24 pb-16">
+          <div className="text-center">
+            <div className="text-lg">Loading topics...</div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

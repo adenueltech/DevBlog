@@ -49,15 +49,58 @@ export default function EditorPage() {
   }, [title, content])
 
   const handleSaveDraft = async () => {
-    setIsSaving(true)
-    // Simulate API call
-    setTimeout(() => {
-      setIsSaving(false)
+    if (!title.trim() || !content.trim()) {
       toast({
-        title: "Draft saved",
-        description: "Your article has been saved as a draft.",
+        title: "Missing content",
+        description: "Please add a title and content before saving.",
+        variant: "destructive",
       })
-    }, 1000)
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      const token = localStorage.getItem("access_token")
+      if (!token) {
+        toast({
+          title: "Authentication required",
+          description: "Please log in to save your article.",
+          variant: "destructive",
+        })
+        setIsSaving(false)
+        return
+      }
+
+      const response = await fetch("http://localhost:3000/articles", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title,
+          content,
+          excerpt,
+          status: "draft",
+        }),
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Draft saved",
+          description: "Your article has been saved as a draft.",
+        })
+      } else {
+        throw new Error("Failed to save draft")
+      }
+    } catch (error) {
+      toast({
+        title: "Save failed",
+        description: "Failed to save your draft. Please try again.",
+        variant: "destructive",
+      })
+    }
+    setIsSaving(false)
   }
 
   const handlePublish = async () => {
@@ -71,14 +114,54 @@ export default function EditorPage() {
     }
 
     setIsSaving(true)
-    // Simulate API call
-    setTimeout(() => {
-      setIsSaving(false)
-      toast({
-        title: "Article published!",
-        description: "Your article is now live and visible to readers.",
+    try {
+      const token = localStorage.getItem("access_token")
+      if (!token) {
+        toast({
+          title: "Authentication required",
+          description: "Please log in to publish your article.",
+          variant: "destructive",
+        })
+        setIsSaving(false)
+        return
+      }
+
+      const response = await fetch("http://localhost:3000/articles", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title,
+          content,
+          excerpt,
+          status: "published",
+        }),
       })
-    }, 1500)
+
+      if (response.ok) {
+        toast({
+          title: "Article published!",
+          description: "Your article is now live and visible to readers.",
+        })
+        // Clear the form after successful publish
+        setTitle("")
+        setContent("")
+        setExcerpt("")
+        setTags([])
+        setCoverImage("")
+      } else {
+        throw new Error("Failed to publish article")
+      }
+    } catch (error) {
+      toast({
+        title: "Publish failed",
+        description: "Failed to publish your article. Please try again.",
+        variant: "destructive",
+      })
+    }
+    setIsSaving(false)
   }
 
   const addTag = () => {

@@ -12,132 +12,71 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, Grid3X3, List, TrendingUp, Users, BookOpen, Calendar, Eye, Heart } from "lucide-react"
 
-// Mock data
-const mockArticles = [
-  {
-    id: "1",
-    title: "Building Scalable React Applications with Next.js 14",
-    excerpt:
-      "Learn how to leverage the latest features in Next.js 14 to build performant and scalable React applications with server components and improved routing.",
-    coverImage: "/placeholder.svg?height=400&width=600",
-    author: { name: "Sarah Chen", avatar: "/placeholder.svg?height=40&width=40", username: "sarahchen" },
-    publishedAt: "2024-01-15",
-    readTime: 8,
-    tags: ["React", "Next.js", "JavaScript", "Web Development"],
-    likes: 234,
-    comments: 45,
-    views: 1234,
-  },
-  {
-    id: "2",
-    title: "The Complete Guide to TypeScript in 2024",
-    excerpt:
-      "Master TypeScript with this comprehensive guide covering advanced types, generics, decorators, and best practices for modern development.",
-    coverImage: "/placeholder.svg?height=400&width=600",
-    author: { name: "Alex Rodriguez", avatar: "/placeholder.svg?height=40&width=40", username: "alexrod" },
-    publishedAt: "2024-01-12",
-    readTime: 12,
-    tags: ["TypeScript", "JavaScript", "Programming"],
-    likes: 189,
-    comments: 32,
-    views: 2156,
-  },
-  {
-    id: "3",
-    title: "Microservices Architecture: Lessons from Production",
-    excerpt:
-      "Real-world insights and lessons learned from implementing microservices at scale, including common pitfalls and best practices.",
-    coverImage: "/placeholder.svg?height=400&width=600",
-    author: { name: "Michael Johnson", avatar: "/placeholder.svg?height=40&width=40", username: "mikej" },
-    publishedAt: "2024-01-10",
-    readTime: 15,
-    tags: ["Architecture", "Backend", "DevOps", "Microservices"],
-    likes: 156,
-    comments: 28,
-    views: 1876,
-  },
-  {
-    id: "4",
-    title: "AI-Powered Development: Tools That Will Change Your Workflow",
-    excerpt:
-      "Explore the latest AI tools and techniques that are revolutionizing how developers write, test, and deploy code.",
-    coverImage: "/placeholder.svg?height=400&width=600",
-    author: { name: "Emily Watson", avatar: "/placeholder.svg?height=40&width=40", username: "emilyw" },
-    publishedAt: "2024-01-08",
-    readTime: 10,
-    tags: ["AI", "Machine Learning", "Developer Tools", "Productivity"],
-    likes: 298,
-    comments: 67,
-    views: 3421,
-  },
-  {
-    id: "5",
-    title: "Modern CSS Techniques for Better Web Design",
-    excerpt:
-      "Discover the latest CSS features and techniques that will help you create stunning, responsive web designs.",
-    coverImage: "/placeholder.svg?height=400&width=600",
-    author: { name: "David Kim", avatar: "/placeholder.svg?height=40&width=40", username: "davidk" },
-    publishedAt: "2024-01-05",
-    readTime: 7,
-    tags: ["CSS", "Web Design", "Frontend", "Responsive"],
-    likes: 145,
-    comments: 23,
-    views: 987,
-  },
-  {
-    id: "6",
-    title: "Database Optimization Strategies for High-Traffic Apps",
-    excerpt: "Learn proven strategies to optimize database performance and handle millions of requests efficiently.",
-    coverImage: "/placeholder.svg?height=400&width=600",
-    author: { name: "Lisa Park", avatar: "/placeholder.svg?height=40&width=40", username: "lisap" },
-    publishedAt: "2024-01-03",
-    readTime: 14,
-    tags: ["Database", "Performance", "Backend", "Optimization"],
-    likes: 203,
-    comments: 41,
-    views: 2543,
-  },
-]
+import { useEffect } from "react"
 
-const popularAuthors = [
-  {
-    name: "Sarah Chen",
-    username: "sarahchen",
-    avatar: "/placeholder.svg?height=40&width=40",
-    followers: 12500,
-    articles: 24,
-  },
-  {
-    name: "Alex Rodriguez",
-    username: "alexrod",
-    avatar: "/placeholder.svg?height=40&width=40",
-    followers: 8900,
-    articles: 18,
-  },
-  {
-    name: "Emily Watson",
-    username: "emilyw",
-    avatar: "/placeholder.svg?height=40&width=40",
-    followers: 15600,
-    articles: 31,
-  },
-  {
-    name: "Michael Johnson",
-    username: "mikej",
-    avatar: "/placeholder.svg?height=40&width=40",
-    followers: 7200,
-    articles: 15,
-  },
-]
+// Fetch data from backend
+function useBackendData() {
+  const [articles, setArticles] = useState([])
+  const [authors, setAuthors] = useState([])
+  const [topics, setTopics] = useState([])
+  const [loading, setLoading] = useState(true)
 
-const trendingTopics = [
-  { name: "React", count: 1234, growth: "+12%" },
-  { name: "TypeScript", count: 987, growth: "+8%" },
-  { name: "Next.js", count: 756, growth: "+15%" },
-  { name: "AI/ML", count: 543, growth: "+25%" },
-  { name: "DevOps", count: 432, growth: "+5%" },
-  { name: "Web3", count: 321, growth: "+18%" },
-]
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        // Fetch published articles
+        const articlesRes = await fetch("http://localhost:3000/articles")
+        if (articlesRes.ok) {
+          const articlesData = await articlesRes.json()
+          setArticles(articlesData)
+        }
+
+        // Fetch authors (users who have published articles)
+        const authorsRes = await fetch("http://localhost:3000/users")
+        if (authorsRes.ok) {
+          const authorsData = await authorsRes.json()
+          setAuthors(authorsData)
+        }
+
+        // Extract topics from articles' tags
+        if (articlesData.length > 0) {
+          const topicCounts: { [key: string]: number } = {}
+          articlesData.forEach((article: any) => {
+            if (article.tags) {
+              const tags = typeof article.tags === 'string' ? article.tags.split(',') : article.tags
+              tags.forEach((tag: string) => {
+                const cleanTag = tag.trim()
+                if (cleanTag) {
+                  topicCounts[cleanTag] = (topicCounts[cleanTag] || 0) + 1
+                }
+              })
+            }
+          })
+          
+          // Convert to topics array and sort by count
+          const topicsArray = Object.entries(topicCounts)
+            .map(([name, count]) => ({
+              name,
+              count,
+              growth: `+${Math.floor(Math.random() * 20 + 5)}%` // Simulated growth for now
+            }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 10) // Top 10 topics
+          
+          setTopics(topicsArray)
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  return { articles, authors, topics, loading }
+}
 
 export default function ExplorePage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -146,14 +85,28 @@ export default function ExplorePage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("list")
   const [activeTab, setActiveTab] = useState("articles")
 
-  const filteredArticles = mockArticles.filter((article) => {
+  const { articles, authors, topics, loading } = useBackendData()
+  
+  const filteredArticles = articles.filter((article: any) => {
     const matchesSearch =
-      article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      article.excerpt.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesTag =
-      selectedTag === "all" || article.tags.some((tag) => tag.toLowerCase().includes(selectedTag.toLowerCase()))
+      article.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      article.excerpt?.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesTag = selectedTag === "all" // For now, ignore tag filtering since we don't have tags implemented yet
     return matchesSearch && matchesTag
   })
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto px-4 pt-24 pb-16">
+          <div className="text-center">
+            <div className="text-lg">Loading articles...</div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -287,7 +240,7 @@ export default function ExplorePage() {
 
               <TabsContent value="authors">
                 <div className="grid gap-4">
-                  {popularAuthors.map((author, index) => (
+                  {authors.map((author, index) => (
                     <Card
                       key={author.username}
                       className="hover:shadow-md transition-shadow animate-fade-in"
@@ -307,7 +260,7 @@ export default function ExplorePage() {
                           </div>
                           <div className="text-right">
                             <div className="text-sm text-muted-foreground">
-                              {author.followers.toLocaleString()} followers
+                              {author.followers?.toLocaleString()} followers
                             </div>
                             <div className="text-sm text-muted-foreground">{author.articles} articles</div>
                           </div>
@@ -323,7 +276,7 @@ export default function ExplorePage() {
 
               <TabsContent value="trending">
                 <div className="space-y-6">
-                  {mockArticles.slice(0, 3).map((article, index) => (
+                  {articles.slice(0, 3).map((article, index) => (
                     <Card
                       key={article.id}
                       className="hover:shadow-md transition-shadow animate-fade-in"
@@ -370,7 +323,7 @@ export default function ExplorePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {trendingTopics.map((topic, index) => (
+                {topics.map((topic, index) => (
                   <div
                     key={topic.name}
                     className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
@@ -399,7 +352,7 @@ export default function ExplorePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {popularAuthors.slice(0, 3).map((author) => (
+                {authors.slice(0, 3).map((author) => (
                   <div key={author.username} className="flex items-center gap-3">
                     <Avatar className="w-10 h-10">
                       <AvatarImage src={author.avatar || "/placeholder.svg"} />
@@ -407,7 +360,7 @@ export default function ExplorePage() {
                     </Avatar>
                     <div className="flex-1">
                       <div className="font-medium text-sm">{author.name}</div>
-                      <div className="text-xs text-muted-foreground">{author.followers.toLocaleString()} followers</div>
+                      <div className="text-xs text-muted-foreground">{author.followers?.toLocaleString()} followers</div>
                     </div>
                     <Button variant="outline" size="sm">
                       Follow

@@ -26,119 +26,37 @@ import {
   Activity,
 } from "lucide-react"
 
-// Mock analytics data
-const analyticsData = {
-  overview: {
-    totalViews: 45678,
-    totalLikes: 2345,
-    totalComments: 567,
-    totalFollowers: 1234,
-    viewsChange: 12.5,
-    likesChange: -3.2,
-    commentsChange: 8.7,
-    followersChange: 15.3,
-  },
-  articles: [
-    {
-      id: "1",
-      title: "Building Scalable React Applications with Next.js 14",
-      publishedAt: "2024-01-15",
-      views: 12340,
-      likes: 234,
-      comments: 45,
-      readTime: 8,
-      viewsChange: 15.2,
-      engagement: 18.9,
-      status: "published",
-    },
-    {
-      id: "2",
-      title: "The Complete Guide to TypeScript in 2024",
-      publishedAt: "2024-01-12",
-      views: 8765,
-      likes: 189,
-      comments: 32,
-      readTime: 12,
-      viewsChange: -5.3,
-      engagement: 21.6,
-      status: "published",
-    },
-    {
-      id: "3",
-      title: "Microservices Architecture: Lessons from Production",
-      publishedAt: "2024-01-10",
-      views: 6543,
-      likes: 156,
-      comments: 28,
-      readTime: 15,
-      viewsChange: 8.7,
-      engagement: 23.8,
-      status: "published",
-    },
-    {
-      id: "4",
-      title: "AI-Powered Development: Tools That Will Change Your Workflow",
-      publishedAt: "2024-01-08",
-      views: 15432,
-      likes: 298,
-      comments: 67,
-      readTime: 10,
-      viewsChange: 25.4,
-      engagement: 19.3,
-      status: "published",
-    },
-    {
-      id: "5",
-      title: "Modern CSS Techniques for Better Web Design",
-      publishedAt: "2024-01-05",
-      views: 2987,
-      likes: 145,
-      comments: 23,
-      readTime: 7,
-      viewsChange: -12.1,
-      engagement: 48.6,
-      status: "published",
-    },
-  ],
-  demographics: {
-    countries: [
-      { name: "United States", percentage: 35.2, views: 16088 },
-      { name: "United Kingdom", percentage: 18.7, views: 8542 },
-      { name: "Germany", percentage: 12.3, views: 5618 },
-      { name: "Canada", percentage: 8.9, views: 4065 },
-      { name: "Australia", percentage: 6.4, views: 2923 },
-      { name: "Others", percentage: 18.5, views: 8442 },
-    ],
-    devices: [
-      { name: "Desktop", percentage: 52.3, views: 23889 },
-      { name: "Mobile", percentage: 38.7, views: 17677 },
-      { name: "Tablet", percentage: 9.0, views: 4112 },
-    ],
-    referrers: [
-      { name: "Direct", percentage: 42.1, views: 19230 },
-      { name: "Google", percentage: 28.5, views: 13018 },
-      { name: "Twitter", percentage: 12.3, views: 5618 },
-      { name: "LinkedIn", percentage: 8.7, views: 3974 },
-      { name: "GitHub", percentage: 5.2, views: 2375 },
-      { name: "Others", percentage: 3.2, views: 1463 },
-    ],
-  },
-  timeData: {
-    daily: [
-      { date: "2024-01-15", views: 1234, likes: 45, comments: 12 },
-      { date: "2024-01-14", views: 987, likes: 32, comments: 8 },
-      { date: "2024-01-13", views: 1456, likes: 67, comments: 15 },
-      { date: "2024-01-12", views: 2134, likes: 89, comments: 23 },
-      { date: "2024-01-11", views: 1876, likes: 54, comments: 18 },
-      { date: "2024-01-10", views: 1654, likes: 43, comments: 11 },
-      { date: "2024-01-09", views: 1432, likes: 38, comments: 9 },
-    ],
-  },
+import { useEffect } from "react";
+
+function useAnalyticsData() {
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      const res = await fetch("http://localhost:3000/analytics/me", { credentials: "include" });
+      const data = await res.json();
+      setAnalyticsData(data);
+      setLoading(false);
+    }
+    fetchData();
+  }, []);
+
+  return { analyticsData, loading };
 }
 
 export default function AnalyticsPage() {
-  const [timeRange, setTimeRange] = useState("30d")
-  const [activeTab, setActiveTab] = useState("overview")
+  const [timeRange, setTimeRange] = useState("30d");
+  const [activeTab, setActiveTab] = useState("overview");
+  const { analyticsData, loading } = useAnalyticsData();
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+  if (!analyticsData) {
+    return <div className="min-h-screen flex items-center justify-center text-red-500">No analytics data found.</div>;
+  }
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`
@@ -221,15 +139,15 @@ export default function AnalyticsPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-2">
                     <Eye className="w-8 h-8 text-blue-600" />
-                    <div className={`flex items-center gap-1 ${getChangeColor(analyticsData.overview.viewsChange)}`}>
-                      {getChangeIcon(analyticsData.overview.viewsChange)}
+                    <div className={`flex items-center gap-1 ${getChangeColor(analyticsData.overview?.viewsChange ?? 0)}`}>
+                      {getChangeIcon(analyticsData.overview?.viewsChange ?? 0)}
                       <span className="text-sm font-medium">
-                        {formatPercentage(analyticsData.overview.viewsChange)}
+                        {formatPercentage(analyticsData.overview?.viewsChange ?? 0)}
                       </span>
                     </div>
                   </div>
                   <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-                    {formatNumber(analyticsData.overview.totalViews)}
+                    {formatNumber(analyticsData.overview?.totalViews ?? 0)}
                   </div>
                   <p className="text-sm text-blue-600 dark:text-blue-400">Total Views</p>
                 </CardContent>
@@ -239,15 +157,15 @@ export default function AnalyticsPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-2">
                     <Heart className="w-8 h-8 text-red-600" />
-                    <div className={`flex items-center gap-1 ${getChangeColor(analyticsData.overview.likesChange)}`}>
-                      {getChangeIcon(analyticsData.overview.likesChange)}
+                    <div className={`flex items-center gap-1 ${getChangeColor(analyticsData.overview?.likesChange ?? 0)}`}>
+                      {getChangeIcon(analyticsData.overview?.likesChange ?? 0)}
                       <span className="text-sm font-medium">
-                        {formatPercentage(analyticsData.overview.likesChange)}
+                        {formatPercentage(analyticsData.overview?.likesChange ?? 0)}
                       </span>
                     </div>
                   </div>
                   <div className="text-2xl font-bold text-red-900 dark:text-red-100">
-                    {formatNumber(analyticsData.overview.totalLikes)}
+                    {formatNumber(analyticsData.overview?.totalLikes ?? 0)}
                   </div>
                   <p className="text-sm text-red-600 dark:text-red-400">Total Likes</p>
                 </CardContent>
@@ -257,15 +175,15 @@ export default function AnalyticsPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-2">
                     <MessageCircle className="w-8 h-8 text-green-600" />
-                    <div className={`flex items-center gap-1 ${getChangeColor(analyticsData.overview.commentsChange)}`}>
-                      {getChangeIcon(analyticsData.overview.commentsChange)}
+                    <div className={`flex items-center gap-1 ${getChangeColor(analyticsData.overview?.commentsChange ?? 0)}`}>
+                      {getChangeIcon(analyticsData.overview?.commentsChange ?? 0)}
                       <span className="text-sm font-medium">
-                        {formatPercentage(analyticsData.overview.commentsChange)}
+                        {formatPercentage(analyticsData.overview?.commentsChange ?? 0)}
                       </span>
                     </div>
                   </div>
                   <div className="text-2xl font-bold text-green-900 dark:text-green-100">
-                    {formatNumber(analyticsData.overview.totalComments)}
+                    {formatNumber(analyticsData.overview?.totalComments ?? 0)}
                   </div>
                   <p className="text-sm text-green-600 dark:text-green-400">Total Comments</p>
                 </CardContent>
@@ -276,16 +194,16 @@ export default function AnalyticsPage() {
                   <div className="flex items-center justify-between mb-2">
                     <Users className="w-8 h-8 text-purple-600" />
                     <div
-                      className={`flex items-center gap-1 ${getChangeColor(analyticsData.overview.followersChange)}`}
+                      className={`flex items-center gap-1 ${getChangeColor(analyticsData.overview?.followersChange ?? 0)}`}
                     >
-                      {getChangeIcon(analyticsData.overview.followersChange)}
+                      {getChangeIcon(analyticsData.overview?.followersChange ?? 0)}
                       <span className="text-sm font-medium">
-                        {formatPercentage(analyticsData.overview.followersChange)}
+                        {formatPercentage(analyticsData.overview?.followersChange ?? 0)}
                       </span>
                     </div>
                   </div>
                   <div className="text-2xl font-bold text-purple-900 dark:text-purple-100">
-                    {formatNumber(analyticsData.overview.totalFollowers)}
+                    {formatNumber(analyticsData.overview?.totalFollowers ?? 0)}
                   </div>
                   <p className="text-sm text-purple-600 dark:text-purple-400">Followers</p>
                 </CardContent>
@@ -337,7 +255,7 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {analyticsData.articles.map((article, index) => (
+                  {(analyticsData.articles ?? []).map((article, index) => (
                     <div
                       key={article.id}
                       className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
@@ -420,7 +338,7 @@ export default function AnalyticsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {analyticsData.demographics.countries.map((country, index) => (
+                    {(analyticsData.demographics?.countries ?? []).map((country, index) => (
                       <div key={country.name} className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center text-xs font-semibold">
@@ -449,7 +367,7 @@ export default function AnalyticsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {analyticsData.demographics.devices.map((device) => (
+                    {(analyticsData.demographics?.devices ?? []).map((device) => (
                       <div key={device.name} className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           {device.name === "Desktop" && <Monitor className="w-5 h-5 text-blue-600" />}
@@ -481,7 +399,7 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {analyticsData.demographics.referrers.map((referrer, index) => (
+                  {(analyticsData.demographics?.referrers ?? []).map((referrer, index) => (
                     <div key={referrer.name} className="p-4 border rounded-lg">
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-semibold">{referrer.name}</span>

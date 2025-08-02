@@ -20,20 +20,45 @@ import { useToast } from "@/hooks/use-toast"
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [isLoggedIn, setIsLoggedIn] = useState(false) // This should come from your auth context
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [userData, setUserData] = useState<any>(null)
   const pathname = usePathname()
   const router = useRouter()
   const { theme, setTheme } = useTheme()
   const { toast } = useToast()
 
-  // Check if user is logged in (this is a simple simulation)
-  // In a real app, this would come from your auth context/state management
+  // Check if user is logged in and fetch user data
   useEffect(() => {
-    // Check if we're on dashboard or settings pages (indicating user is logged in)
-    const loggedInRoutes = ["/dashboard", "/settings", "/editor"]
-    const isOnLoggedInRoute = loggedInRoutes.some((route) => pathname.startsWith(route))
-    setIsLoggedIn(isOnLoggedInRoute)
-  }, [pathname])
+    async function checkAuth() {
+      try {
+        const token = localStorage.getItem("access_token");
+        if (!token) {
+          setIsLoggedIn(false);
+          setUserData(null);
+          return;
+        }
+        
+        const res = await fetch("http://localhost:3000/users/me", {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+        
+        if (res.ok) {
+          const user = await res.json();
+          setIsLoggedIn(true);
+          setUserData(user);
+        } else {
+          setIsLoggedIn(false);
+          setUserData(null);
+        }
+      } catch {
+        setIsLoggedIn(false);
+        setUserData(null);
+      }
+    }
+    checkAuth();
+  }, [pathname]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -44,7 +69,8 @@ export function Navbar() {
   }, [])
 
   const handleLogout = () => {
-    // Simulate logout
+    // Clear the JWT token from localStorage
+    localStorage.removeItem("access_token")
     setIsLoggedIn(false)
     toast({
       title: "Logged out",
@@ -134,8 +160,8 @@ export function Navbar() {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src="/placeholder.svg" alt="User" />
-                        <AvatarFallback>JD</AvatarFallback>
+                        <AvatarImage src={userData?.avatar || "/placeholder.svg"} alt="User" />
+                        <AvatarFallback>{userData?.name?.[0] || "U"}</AvatarFallback>
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>

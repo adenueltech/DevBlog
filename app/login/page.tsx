@@ -13,6 +13,8 @@ import { useToast } from "@/hooks/use-toast"
 import { Eye, EyeOff, Github, Mail, ArrowLeft } from "lucide-react"
 import { useRouter } from "next/navigation"
 
+import { useEffect } from "react"
+
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -23,23 +25,66 @@ export default function LoginPage() {
   const { toast } = useToast()
   const router = useRouter()
 
+  // Redirect authenticated users away from login page
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const res = await fetch("http://localhost:3000/api/user", { credentials: "include" })
+        if (res.ok) {
+          const user = await res.json()
+          if (user && user.id) {
+            router.replace("/dashboard")
+          }
+        }
+      } catch (err) {
+        // Not authenticated, do nothing
+      }
+    }
+    checkAuth()
+  }, [router])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
-      toast({
-        title: "Welcome back!",
-        description: "You have been successfully logged in.",
+    try {
+      const res = await fetch("http://localhost:3000/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       })
 
-      // Redirect to dashboard after successful login
-      setTimeout(() => {
-        router.push("/dashboard")
-      }, 1000) // Small delay to show the success message
-    }, 1000)
+      if (res.ok) {
+        const data = await res.json()
+        // Store the JWT token in localStorage
+        localStorage.setItem("access_token", data.access_token)
+        
+        toast({
+          title: "Welcome back!",
+          description: "You have been successfully logged in.",
+        })
+
+        // Redirect to dashboard after successful login
+        setTimeout(() => {
+          router.push("/dashboard")
+        }, 1000)
+      } else {
+        const errorData = await res.json().catch(() => ({}))
+        toast({
+          title: "Login failed",
+          description: errorData.message || "Invalid credentials",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Login failed",
+        description: "Network error. Please try again.",
+        variant: "destructive",
+      })
+    }
+
+    setIsLoading(false)
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -23,62 +23,87 @@ import {
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
-// Mock user data
-const userData = {
-  name: "John Doe",
-  username: "johndoe",
-  avatar: "/placeholder.svg?height=80&width=80",
-  bio: "Full-stack developer passionate about React, Node.js, and building amazing user experiences. Always learning and sharing knowledge with the community.",
-  joinedDate: "2023-06-15",
-  stats: {
-    articles: 12,
-    followers: 1234,
-    following: 567,
-    totalViews: 45678,
-    totalLikes: 2345,
-  },
-}
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 
-// Mock articles data
-const userArticles = [
-  {
-    id: "1",
-    title: "Building Scalable React Applications with Next.js 14",
-    excerpt:
-      "Learn how to leverage the latest features in Next.js 14 to build performant and scalable React applications.",
-    status: "published",
-    publishedAt: "2024-01-15",
-    views: 1234,
-    likes: 89,
-    comments: 23,
-    readTime: 8,
-  },
-  {
-    id: "2",
-    title: "The Complete Guide to TypeScript in 2024",
-    excerpt: "Master TypeScript with this comprehensive guide covering advanced types, generics, and best practices.",
-    status: "published",
-    publishedAt: "2024-01-10",
-    views: 2156,
-    likes: 156,
-    comments: 45,
-    readTime: 12,
-  },
-  {
-    id: "3",
-    title: "Understanding React Server Components",
-    excerpt: "A deep dive into React Server Components and how they change the way we think about React applications.",
-    status: "draft",
-    publishedAt: null,
-    views: 0,
-    likes: 0,
-    comments: 0,
-    readTime: 10,
-  },
-]
+function useUserDashboardData() {
+  const [userData, setUserData] = useState<any>(null)
+  const [userArticles, setUserArticles] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  // Function to refresh data
+  const refreshData = () => {
+    setRefreshKey(prev => prev + 1)
+  }
+
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true)
+      try {
+        const token = localStorage.getItem("access_token");
+        if (!token) {
+          setUserData(null);
+          setLoading(false);
+          return;
+        }
+
+        // Fetch user data with JWT token
+        const userRes = await fetch("http://localhost:3000/users/me", {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        })
+        if (userRes.ok) {
+          const user = await userRes.json()
+          setUserData(user)
+        }
+
+        // Fetch user articles with JWT token
+        const articlesRes = await fetch("http://localhost:3000/users/me/articles", {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        })
+        if (articlesRes.ok) {
+          let articles = await articlesRes.json()
+          if (!Array.isArray(articles)) articles = [];
+          setUserArticles(articles)
+        }
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+        setUserData(null);
+      }
+      setLoading(false)
+    }
+    fetchData()
+  }, [refreshKey])
+
+  return { userData, userArticles, loading, refreshData }
+}
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("overview")
+  const { userData, userArticles, loading, refreshData } = useUserDashboardData()
+
+  // Refresh data when the page becomes visible (user returns from settings)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        refreshData()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [refreshData])
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
+  }
+  if (!userData) {
+    return <div className="min-h-screen flex items-center justify-center text-red-500">User not found or not authenticated.</div>
+  }
 
   const publishedArticles = userArticles.filter((article) => article.status === "published")
   const draftArticles = userArticles.filter((article) => article.status === "draft")
@@ -94,48 +119,48 @@ export default function DashboardPage() {
           <Card className="lg:w-80 shadow-lg border-0 bg-card/50 backdrop-blur-sm">
             <CardHeader className="text-center">
               <Avatar className="w-20 h-20 mx-auto mb-4">
-                <AvatarImage src={userData.avatar || "/placeholder.svg"} />
-                <AvatarFallback className="text-2xl">{userData.name[0]}</AvatarFallback>
+              <AvatarImage src={userData.avatar || "/placeholder.svg"} />
+              <AvatarFallback className="text-2xl">{userData.name?.[0]}</AvatarFallback>
               </Avatar>
               <CardTitle className="text-xl">{userData.name}</CardTitle>
               <CardDescription>@{userData.username}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              </CardHeader>
+              <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground leading-relaxed">{userData.bio}</p>
-
+              
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="w-4 h-4" />
-                Joined{" "}
-                {new Date(userData.joinedDate).toLocaleDateString("en-US", {
-                  month: "long",
-                  year: "numeric",
-                })}
+              <Calendar className="w-4 h-4" />
+              Joined{" "}
+              {userData.joinedDate ? new Date(userData.joinedDate).toLocaleDateString("en-US", {
+              month: "long",
+              year: "numeric",
+              }) : "-"}
               </div>
-
+              
               {/* Stats */}
               <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">{userData.stats.articles}</div>
-                  <div className="text-xs text-muted-foreground">Articles</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">{userData.stats.followers.toLocaleString()}</div>
-                  <div className="text-xs text-muted-foreground">Followers</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">{userData.stats.following}</div>
-                  <div className="text-xs text-muted-foreground">Following</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">{userData.stats.totalViews.toLocaleString()}</div>
-                  <div className="text-xs text-muted-foreground">Total Views</div>
-                </div>
+              <div className="text-center">
+              <div className="text-2xl font-bold text-primary">{userData.stats?.articles ?? 0}</div>
+              <div className="text-xs text-muted-foreground">Articles</div>
               </div>
-
+              <div className="text-center">
+              <div className="text-2xl font-bold text-primary">{userData.stats?.followers?.toLocaleString() ?? 0}</div>
+              <div className="text-xs text-muted-foreground">Followers</div>
+              </div>
+              <div className="text-center">
+              <div className="text-2xl font-bold text-primary">{userData.stats?.following ?? 0}</div>
+              <div className="text-xs text-muted-foreground">Following</div>
+              </div>
+              <div className="text-center">
+              <div className="text-2xl font-bold text-primary">{userData.stats?.totalViews?.toLocaleString() ?? 0}</div>
+              <div className="text-xs text-muted-foreground">Total Views</div>
+              </div>
+              </div>
+              
               <Button className="w-full" asChild>
-                <Link href="/settings">Edit Profile</Link>
+              <Link href="/settings">Edit Profile</Link>
               </Button>
-            </CardContent>
+              </CardContent>
           </Card>
 
           {/* Main Content */}
@@ -164,7 +189,7 @@ export default function DashboardPage() {
                     <div>
                       <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Total Views</p>
                       <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-                        {userData.stats.totalViews.toLocaleString()}
+                        {userData.stats?.totalViews?.toLocaleString() ?? "0"}
                       </p>
                     </div>
                     <Eye className="w-8 h-8 text-blue-500" />
@@ -178,7 +203,7 @@ export default function DashboardPage() {
                     <div>
                       <p className="text-sm font-medium text-red-600 dark:text-red-400">Total Likes</p>
                       <p className="text-2xl font-bold text-red-900 dark:text-red-100">
-                        {userData.stats.totalLikes.toLocaleString()}
+                        {userData.stats?.totalLikes?.toLocaleString() ?? "0"}
                       </p>
                     </div>
                     <Heart className="w-8 h-8 text-red-500" />
@@ -206,7 +231,7 @@ export default function DashboardPage() {
                     <div>
                       <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Followers</p>
                       <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">
-                        {userData.stats.followers.toLocaleString()}
+                        {userData.stats?.followers?.toLocaleString() ?? "0"}
                       </p>
                     </div>
                     <Users className="w-8 h-8 text-purple-500" />

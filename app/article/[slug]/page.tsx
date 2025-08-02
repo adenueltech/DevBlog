@@ -28,237 +28,89 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { CommentSection } from "@/components/comment-section"
 
-// Mock article data - replace with API call
-const mockArticle = {
-  id: "1",
-  title: "Building Scalable React Applications with Next.js 14",
-  slug: "building-scalable-react-applications-nextjs-14",
-  excerpt:
-    "Learn how to leverage the latest features in Next.js 14 to build performant and scalable React applications with server components and improved routing.",
-  content: `
-# Building Scalable React Applications with Next.js 14
-
-Next.js 14 introduces groundbreaking features that revolutionize how we build React applications. In this comprehensive guide, we'll explore the latest capabilities and learn how to leverage them for maximum performance and scalability.
-
-## What's New in Next.js 14
-
-The latest version of Next.js brings several exciting features:
-
-### 1. Turbopack (Beta)
-Turbopack is the new Rust-based bundler that's up to **700x faster** than Webpack for local development. Here's how to enable it:
-
-\`\`\`bash
-npm run dev -- --turbo
-\`\`\`
-
-### 2. Server Actions (Stable)
-Server Actions allow you to run server-side code directly from your components:
-
-\`\`\`typescript
-async function createPost(formData: FormData) {
-  'use server'
-  
-  const title = formData.get('title')
-  const content = formData.get('content')
-  
-  // Save to database
-  await db.post.create({
-    data: { title, content }
-  })
-}
-\`\`\`
-
-### 3. Partial Prerendering (Preview)
-This experimental feature combines the benefits of static and dynamic rendering:
-
-\`\`\`typescript
-export const experimental_ppr = true
-\`\`\`
-
-## Building Scalable Architecture
-
-When building large-scale applications, consider these architectural patterns:
-
-### Component Organization
-Structure your components hierarchically:
-
-\`\`\`
-src/
-├── components/
-│   ├── ui/           # Reusable UI components
-│   ├── forms/        # Form components
-│   └── layout/       # Layout components
-├── app/
-│   ├── (dashboard)/  # Route groups
-│   └── api/          # API routes
-└── lib/
-    ├── utils.ts      # Utility functions
-    └── validations.ts # Zod schemas
-\`\`\`
-
-### State Management
-For complex state, consider using Zustand or Redux Toolkit:
-
-\`\`\`typescript
-import { create } from 'zustand'
-
-interface AppState {
-  user: User | null
-  setUser: (user: User) => void
-}
-
-export const useAppStore = create<AppState>((set) => ({
-  user: null,
-  setUser: (user) => set({ user }),
-}))
-\`\`\`
-
-## Performance Optimization
-
-### 1. Image Optimization
-Always use Next.js Image component:
-
-\`\`\`jsx
-import Image from 'next/image'
-
-<Image
-  src="/hero.jpg"
-  alt="Hero image"
-  width={800}
-  height={400}
-  priority
-/>
-\`\`\`
-
-### 2. Code Splitting
-Leverage dynamic imports for better performance:
-
-\`\`\`typescript
-import dynamic from 'next/dynamic'
-
-const DynamicComponent = dynamic(() => import('./HeavyComponent'), {
-  loading: () => <p>Loading...</p>,
-})
-\`\`\`
-
-### 3. Caching Strategies
-Implement proper caching with the new App Router:
-
-\`\`\`typescript
-export const revalidate = 3600 // Revalidate every hour
-
-export default async function Page() {
-  const data = await fetch('https://api.example.com/data', {
-    next: { revalidate: 60 }
-  })
-  
-  return <div>{/* Your component */}</div>
-}
-\`\`\`
-
-## Database Integration
-
-For scalable applications, consider using Prisma with PostgreSQL:
-
-\`\`\`typescript
-// prisma/schema.prisma
-model Post {
-  id        String   @id @default(cuid())
-  title     String
-  content   String
-  published Boolean  @default(false)
-  author    User     @relation(fields: [authorId], references: [id])
-  authorId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-\`\`\`
-
-## Testing Strategy
-
-Implement comprehensive testing:
-
-\`\`\`typescript
-// __tests__/components/Button.test.tsx
-import { render, screen } from '@testing-library/react'
-import { Button } from '@/components/ui/button'
-
-describe('Button', () => {
-  it('renders correctly', () => {
-    render(<Button>Click me</Button>)
-    expect(screen.getByRole('button')).toBeInTheDocument()
-  })
-})
-\`\`\`
-
-## Deployment Best Practices
-
-### Vercel Deployment
-The easiest way to deploy Next.js applications:
-
-\`\`\`bash
-npm install -g vercel
-vercel
-\`\`\`
-
-### Environment Variables
-Properly configure your environment variables:
-
-\`\`\`bash
-# .env.local
-NEXT_PUBLIC_API_URL=https://api.yourapp.com
-DATABASE_URL=postgresql://...
-JWT_SECRET=your-secret-key
-\`\`\`
-
-## Conclusion
-
-Next.js 14 provides powerful tools for building scalable React applications. By following these best practices and leveraging the new features, you can create applications that perform well at scale.
-
-The key is to:
-- Use Server Components where possible
-- Implement proper caching strategies
-- Optimize images and assets
-- Structure your code for maintainability
-- Test thoroughly
-
-Happy coding! 🚀
-  `,
-  coverImage: "/placeholder.svg?height=400&width=800",
-  author: {
-    id: "author-1",
-    name: "Sarah Chen",
-    username: "sarahchen",
-    avatar: "/placeholder.svg?height=60&width=60",
-    bio: "Senior Frontend Developer at TechCorp. Passionate about React, Next.js, and building amazing user experiences.",
-    followers: 12500,
-    following: 890,
-  },
-  publishedAt: "2024-01-15T10:00:00Z",
-  updatedAt: "2024-01-15T10:00:00Z",
-  readTime: 8,
-  views: 1234,
-  likes: 234,
-  comments: 45,
-  tags: ["React", "Next.js", "JavaScript", "Web Development", "Performance"],
-  isLiked: false,
-  isBookmarked: false,
-}
+// No mock data - use only real backend data
 
 export default function ArticlePage() {
   const params = useParams()
   const { toast } = useToast()
-  const [article, setArticle] = useState(mockArticle)
-  const [isLiked, setIsLiked] = useState(article.isLiked)
-  const [isBookmarked, setIsBookmarked] = useState(article.isBookmarked)
-  const [likesCount, setLikesCount] = useState(article.likes)
+  const [article, setArticle] = useState<any>(null)
+  const [isLiked, setIsLiked] = useState(false)
+  const [isBookmarked, setIsBookmarked] = useState(false)
+  const [likesCount, setLikesCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-  // Simulate loading article data
+  // Fetch article data from database
   useEffect(() => {
-    // In real app, fetch article by slug from API
-    console.log("Loading article with slug:", params.slug)
+    async function fetchArticle() {
+      try {
+        // Try to fetch by ID first (if slug is numeric), then by slug
+        let response = await fetch(`http://localhost:3000/articles/${params.slug}`)
+        
+        if (!response.ok && !isNaN(Number(params.slug))) {
+          // If slug is numeric, try as ID
+          response = await fetch(`http://localhost:3000/articles/${params.slug}`)
+        }
+        
+        if (response.ok) {
+          const articleData = await response.json()
+          // Transform backend data to match expected format
+          const transformedArticle = {
+            ...articleData,
+            author: {
+              ...articleData.author,
+              username: articleData.author.username || articleData.author.name?.toLowerCase().replace(/\s+/g, '') || `user${articleData.author.id}`,
+              avatar: articleData.author.avatar || "/placeholder.svg",
+            },
+            tags: articleData.tags ? articleData.tags.split(',') : [],
+            isLiked: false,
+            isBookmarked: false,
+          }
+          setArticle(transformedArticle)
+          setIsLiked(transformedArticle.isLiked)
+          setIsBookmarked(transformedArticle.isBookmarked)
+          setLikesCount(transformedArticle.likes || 0)
+        } else {
+          setArticle(null)
+        }
+      } catch (error) {
+        console.error("Error fetching article:", error)
+        setArticle(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (params.slug) {
+      fetchArticle()
+    }
   }, [params.slug])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto px-4 pt-24">
+          <div className="text-center">
+            <div className="text-lg">Loading article...</div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!article) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto px-4 pt-24">
+          <div className="text-center">
+            <div className="text-lg">Article not found</div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const handleLike = async () => {
     setIsLoading(true)
@@ -331,7 +183,7 @@ export default function ArticlePage() {
           <div className="max-w-4xl mx-auto">
             {/* Tags */}
             <div className="flex flex-wrap gap-2 mb-4">
-              {article.tags.map((tag) => (
+              {(article.tags || []).map((tag) => (
                 <Badge
                   key={tag}
                   variant="secondary"
@@ -353,14 +205,16 @@ export default function ArticlePage() {
             {/* Author and Meta Info */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
               <div className="flex items-center gap-4">
-                <Avatar className="w-12 h-12">
-                  <AvatarImage src={article.author.avatar || "/placeholder.svg"} />
-                  <AvatarFallback>{article.author.name[0]}</AvatarFallback>
-                </Avatar>
+                <Link href={`/user/${article.author.username || article.author.email?.split('@')[0]}`}>
+                  <Avatar className="w-12 h-12 cursor-pointer hover:ring-2 hover:ring-primary transition-all">
+                    <AvatarImage src={article.author.avatar || "/placeholder.svg"} />
+                    <AvatarFallback>{article.author.name?.[0] || "U"}</AvatarFallback>
+                  </Avatar>
+                </Link>
                 <div>
                   <div className="flex items-center gap-2">
                     <Link
-                      href={`/user/${article.author.username}`}
+                      href={`/user/${article.author.username || article.author.email?.split('@')[0]}`}
                       className="font-semibold hover:text-primary transition-colors"
                     >
                       {article.author.name}
@@ -488,7 +342,7 @@ export default function ArticlePage() {
             <div className="mb-8">
               <h3 className="text-lg font-semibold mb-4">Tags</h3>
               <div className="flex flex-wrap gap-2">
-                {article.tags.map((tag) => (
+                {(article.tags || []).map((tag) => (
                   <Badge
                     key={tag}
                     variant="outline"
@@ -504,24 +358,26 @@ export default function ArticlePage() {
             <Card className="mb-8">
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
-                  <Avatar className="w-16 h-16">
-                    <AvatarImage src={article.author.avatar || "/placeholder.svg"} />
-                    <AvatarFallback className="text-xl">{article.author.name[0]}</AvatarFallback>
-                  </Avatar>
+                  <Link href={`/user/${article.author.username || article.author.email?.split('@')[0]}`}>
+                    <Avatar className="w-16 h-16 cursor-pointer hover:ring-2 hover:ring-primary transition-all">
+                      <AvatarImage src={article.author.avatar || "/placeholder.svg"} />
+                      <AvatarFallback className="text-xl">{article.author.name?.[0] || "U"}</AvatarFallback>
+                    </Avatar>
+                  </Link>
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
                       <Link
-                        href={`/user/${article.author.username}`}
+                        href={`/user/${article.author.username || article.author.email?.split('@')[0]}`}
                         className="text-xl font-semibold hover:text-primary transition-colors"
                       >
                         {article.author.name}
                       </Link>
                       <Button variant="outline">Follow</Button>
                     </div>
-                    <p className="text-muted-foreground mb-3">{article.author.bio}</p>
+                    <p className="text-muted-foreground mb-3">{article.author.bio || "No bio available"}</p>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span>{article.author.followers.toLocaleString()} followers</span>
-                      <span>{article.author.following.toLocaleString()} following</span>
+                      <span>{(article.author.followers || 0).toLocaleString()} followers</span>
+                      <span>{(article.author.following || 0).toLocaleString()} following</span>
                     </div>
                   </div>
                 </div>
@@ -547,7 +403,7 @@ export default function ArticlePage() {
         </div>
 
         {/* Comments Section */}
-        <div className="container mx-auto px-4 pb-16">
+        <div id="comments" className="container mx-auto px-4 pb-16">
           <div className="max-w-4xl mx-auto">
             <CommentSection articleId={article.id} />
           </div>

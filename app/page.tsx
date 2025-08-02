@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Navbar } from "@/components/navbar"
 import { HeroSection } from "@/components/hero-section"
 import { ArticleCard } from "@/components/article-card"
@@ -9,7 +9,33 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TrendingUp, Clock, Star, Filter } from "lucide-react"
 
-// Mock data - replace with your API calls
+// Hook to fetch articles from backend
+function useArticles() {
+  const [articles, setArticles] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchArticles() {
+      try {
+        const response = await fetch("http://localhost:3000/articles")
+        if (response.ok) {
+          const data = await response.json()
+          setArticles(data)
+        }
+      } catch (error) {
+        console.error("Error fetching articles:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchArticles()
+  }, [])
+
+  return { articles, loading }
+}
+
+// Fallback mock data for when no articles exist
 const mockArticles = [
   {
     id: "1",
@@ -89,12 +115,44 @@ const mockArticles = [
   },
 ]
 
-const featuredArticle = mockArticles[0]
-const regularArticles = mockArticles.slice(1)
-
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState("trending")
   const [isLoading, setIsLoading] = useState(false)
+  const { articles, loading } = useArticles()
+
+  // Transform backend articles to match the expected format
+  const transformedArticles = articles.map((article: any) => ({
+    ...article,
+    id: article.id.toString(),
+    author: {
+      name: article.author.name,
+      avatar: article.author.avatar || "/placeholder.svg",
+      username: article.author.username || article.author.name?.toLowerCase().replace(/\s+/g, '') || `user${article.author.id}`,
+    },
+    tags: article.tags ? article.tags.split(',') : [],
+    likes: article.likes || 0,
+    comments: article.comments || 0,
+    isLiked: false,
+    isBookmarked: false,
+  }))
+
+  // Use real articles if available, otherwise fallback to mock data
+  const displayArticles = transformedArticles.length > 0 ? transformedArticles : mockArticles
+  const featuredArticle = displayArticles[0]
+  const regularArticles = displayArticles.slice(1)
+
+  if (loading) {
+    return (
+      <div className="min-h-screen pt-24 bg-background">
+        <Navbar />
+        <div className="container mx-auto px-4 pt-24">
+          <div className="text-center">
+            <div className="text-lg">Loading articles...</div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen pt-24 bg-background">

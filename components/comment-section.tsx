@@ -29,69 +29,8 @@ interface CommentSectionProps {
   articleId: string
 }
 
-// Mock comments data
-const mockComments: Comment[] = [
-  {
-    id: "1",
-    content:
-      "Great article! The explanation of Server Actions is particularly helpful. I've been struggling with understanding how to implement them properly, and this cleared up a lot of confusion.",
-    author: {
-      id: "user-1",
-      name: "Alex Rodriguez",
-      username: "alexrod",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-    createdAt: "2024-01-16T08:30:00Z",
-    likes: 12,
-    isLiked: false,
-    replies: [
-      {
-        id: "1-1",
-        content: "Thanks Alex! I'm glad it helped. Server Actions are definitely a game-changer for form handling.",
-        author: {
-          id: "author-1",
-          name: "Sarah Chen",
-          username: "sarahchen",
-          avatar: "/placeholder.svg?height=40&width=40",
-        },
-        createdAt: "2024-01-16T09:15:00Z",
-        likes: 5,
-        isLiked: true,
-      },
-    ],
-  },
-  {
-    id: "2",
-    content:
-      "The performance improvements with Turbopack are incredible! We've seen a 5x speed improvement in our development builds. Can't wait for it to be stable.",
-    author: {
-      id: "user-2",
-      name: "Emily Watson",
-      username: "emilyw",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-    createdAt: "2024-01-16T10:45:00Z",
-    likes: 8,
-    isLiked: true,
-  },
-  {
-    id: "3",
-    content:
-      "Quick question: Do you have any recommendations for testing Server Actions? I'm having trouble writing unit tests for them.",
-    author: {
-      id: "user-3",
-      name: "Michael Johnson",
-      username: "mikej",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-    createdAt: "2024-01-16T11:20:00Z",
-    likes: 3,
-    isLiked: false,
-  },
-]
-
 export function CommentSection({ articleId }: CommentSectionProps) {
-  const [comments, setComments] = useState<Comment[]>(mockComments)
+  const [comments, setComments] = useState<Comment[]>([])
   const [newComment, setNewComment] = useState("")
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
   const [replyContent, setReplyContent] = useState("")
@@ -103,31 +42,34 @@ export function CommentSection({ articleId }: CommentSectionProps) {
 
     setIsSubmitting(true)
 
-    // Simulate API call
-    setTimeout(() => {
-      const comment: Comment = {
-        id: Date.now().toString(),
-        content: newComment,
-        author: {
-          id: "current-user",
-          name: "John Doe",
-          username: "johndoe",
-          avatar: "/placeholder.svg?height=40&width=40",
-        },
-        createdAt: new Date().toISOString(),
-        likes: 0,
-        isLiked: false,
-      }
-
-      setComments([comment, ...comments])
+    try {
+      // TODO: Replace with actual API call to post comment
+      // const response = await fetch(`/api/articles/${articleId}/comments`, {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //     'Authorization': `Bearer ${localStorage.getItem('token')}`
+      //   },
+      //   body: JSON.stringify({ content: newComment })
+      // })
+      // const newCommentData = await response.json()
+      // setComments([newCommentData, ...comments])
+      
       setNewComment("")
       setIsSubmitting(false)
 
       toast({
-        title: "Comment posted!",
-        description: "Your comment has been added to the discussion.",
+        title: "Comment functionality ready",
+        description: "Comment posting will be available when backend API is implemented.",
       })
-    }, 1000)
+    } catch (error) {
+      setIsSubmitting(false)
+      toast({
+        title: "Error",
+        description: "Failed to post comment. Please try again.",
+        variant: "destructive"
+      })
+    }
   }
 
   const handleSubmitReply = async (parentId: string) => {
@@ -135,43 +77,45 @@ export function CommentSection({ articleId }: CommentSectionProps) {
 
     setIsSubmitting(true)
 
-    // Simulate API call
-    setTimeout(() => {
-      const reply: Comment = {
-        id: `${parentId}-${Date.now()}`,
-        content: replyContent,
-        author: {
-          id: "current-user",
-          name: "John Doe",
-          username: "johndoe",
-          avatar: "/placeholder.svg?height=40&width=40",
-        },
-        createdAt: new Date().toISOString(),
-        likes: 0,
-        isLiked: false,
-      }
-
-      setComments(
-        comments.map((comment) => {
-          if (comment.id === parentId) {
-            return {
-              ...comment,
-              replies: [...(comment.replies || []), reply],
-            }
-          }
-          return comment
-        }),
-      )
+    try {
+      // TODO: Replace with actual API call to post reply
+      // const response = await fetch(`/api/comments/${parentId}/replies`, {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //     'Authorization': `Bearer ${localStorage.getItem('token')}`
+      //   },
+      //   body: JSON.stringify({ content: replyContent })
+      // })
+      // const newReply = await response.json()
+      // setComments(
+      //   comments.map((comment) => {
+      //     if (comment.id === parentId) {
+      //       return {
+      //         ...comment,
+      //         replies: [...(comment.replies || []), newReply],
+      //       }
+      //     }
+      //     return comment
+      //   }),
+      // )
 
       setReplyContent("")
       setReplyingTo(null)
       setIsSubmitting(false)
 
       toast({
-        title: "Reply posted!",
-        description: "Your reply has been added to the discussion.",
+        title: "Reply functionality ready",
+        description: "Reply posting will be available when backend API is implemented.",
       })
-    }, 1000)
+    } catch (error) {
+      setIsSubmitting(false)
+      toast({
+        title: "Error",
+        description: "Failed to post reply. Please try again.",
+        variant: "destructive"
+      })
+    }
   }
 
   const handleLikeComment = (commentId: string, isReply = false, parentId?: string) => {
@@ -239,11 +183,7 @@ export function CommentSection({ articleId }: CommentSectionProps) {
           <div className="flex items-center gap-2 mb-2">
             <span className="font-semibold text-sm">{comment.author.name}</span>
             <span className="text-xs text-muted-foreground">@{comment.author.username}</span>
-            {comment.author.id === "author-1" && (
-              <Badge variant="secondary" className="text-xs">
-                Author
-              </Badge>
-            )}
+            {/* TODO: Add author badge logic when user roles are implemented */}
             <span className="text-xs text-muted-foreground">•</span>
             <span className="text-xs text-muted-foreground">{formatDate(comment.createdAt)}</span>
           </div>
@@ -284,12 +224,7 @@ export function CommentSection({ articleId }: CommentSectionProps) {
                   <Flag className="w-4 h-4" />
                   Report
                 </DropdownMenuItem>
-                {comment.author.id === "current-user" && (
-                  <DropdownMenuItem className="gap-2 text-destructive">
-                    <Trash2 className="w-4 h-4" />
-                    Delete
-                  </DropdownMenuItem>
-                )}
+                {/* TODO: Add delete option for comment author when user auth is implemented */}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

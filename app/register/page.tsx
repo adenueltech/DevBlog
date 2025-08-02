@@ -46,19 +46,46 @@ export default function RegisterPage() {
 
     setIsLoading(true)
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
-      toast({
-        title: "Account created!",
-        description: "Welcome to DevBlog! You can now start writing and reading amazing content.",
+    try {
+      const res = await fetch("http://localhost:3000/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          name: formData.username, // Using username as name
+          username: formData.username, // Also sending as username
+        }),
       })
 
-      // Redirect to dashboard after successful registration
-      setTimeout(() => {
-        router.push("/dashboard")
-      }, 1000) // Small delay to show the success message
-    }, 1000)
+      if (res.ok) {
+        const data = await res.json()
+        toast({
+          title: "Account created!",
+          description: "Welcome to DevBlog! You can now start writing and reading amazing content.",
+        })
+
+        // Redirect to login page after successful registration
+        setTimeout(() => {
+          router.push("/login")
+        }, 1000)
+      } else {
+        const errorData = await res.json().catch(() => ({}))
+        toast({
+          title: "Registration failed",
+          description: errorData.message || "Failed to create account. Please try again.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Registration failed",
+        description: "Network error. Please try again.",
+        variant: "destructive",
+      })
+    }
+
+    setIsLoading(false)
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

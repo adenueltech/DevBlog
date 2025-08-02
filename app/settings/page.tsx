@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,18 +19,46 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
   const { toast } = useToast()
 
   // Profile data
   const [profileData, setProfileData] = useState({
-    name: "John Doe",
-    username: "johndoe",
-    email: "john.doe@example.com",
-    bio: "Full-stack developer passionate about React, Node.js, and building amazing user experiences. Always learning and sharing knowledge with the community.",
-    website: "https://johndoe.dev",
-    location: "San Francisco, CA",
-    avatar: "/placeholder.svg?height=80&width=80",
-  })
+    name: "",
+    username: "",
+    email: "",
+    bio: "",
+    website: "",
+    location: "",
+    avatar: "",
+  });
+
+  // Fetch real user data on mount
+  useEffect(() => {
+    async function fetchUser() {
+      const token = localStorage.getItem("access_token");
+      if (!token) return;
+      
+      const res = await fetch("http://localhost:3000/users/me", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+      if (res.ok) {
+        const user = await res.json();
+        setProfileData({
+          name: user.name || "",
+          username: user.username || "",
+          email: user.email || "",
+          bio: user.bio || "",
+          website: user.website || "",
+          location: user.location || "",
+          avatar: user.avatar || "/placeholder.svg?height=80&width=80",
+        });
+      }
+    }
+    fetchUser();
+  }, []);
 
   // Password data
   const [passwordData, setPasswordData] = useState({
@@ -50,16 +78,49 @@ export default function SettingsPage() {
   })
 
   const handleProfileSave = async () => {
-    setIsLoading(true)
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        toast({
+          title: "Authentication required",
+          description: "Please log in to update your profile.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      const res = await fetch("http://localhost:3000/users/me", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(profileData),
+      });
+      if (res.ok) {
+        toast({
+          title: "Profile updated!",
+          description: "Your profile has been successfully updated.",
+        });
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        toast({
+          title: "Update failed",
+          description: errorData.message || "Could not update your profile.",
+          variant: "destructive",
+        });
+      }
+    } catch (e) {
       toast({
-        title: "Profile updated!",
-        description: "Your profile has been successfully updated.",
-      })
-    }, 1000)
-  }
+        title: "Update failed",
+        description: "Could not update your profile.",
+        variant: "destructive",
+      });
+    }
+    setIsLoading(false);
+  };
 
   const handlePasswordChange = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
@@ -81,6 +142,82 @@ export default function SettingsPage() {
         description: "Your password has been successfully changed.",
       })
     }, 1000)
+  }
+
+  const compressImage = (file: File, maxWidth: number = 200, quality: number = 0.8): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      const img = new Image()
+
+      img.onload = () => {
+        // Calculate new dimensions while maintaining aspect ratio
+        const ratio = Math.min(maxWidth / img.width, maxWidth / img.height)
+        canvas.width = img.width * ratio
+        canvas.height = img.height * ratio
+
+        // Draw and compress the image
+        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height)
+        
+        // Convert to base64 with compression
+        const compressedBase64 = canvas.toDataURL('image/jpeg', quality)
+        resolve(compressedBase64)
+      }
+
+      img.onerror = reject
+      img.src = URL.createObjectURL(file)
+    })
+  }
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Check file size (max 5MB for original file)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please select an image smaller than 5MB.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please select a valid image file (JPG, PNG, GIF).",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsUploadingImage(true)
+
+    try {
+      // Compress the image to reduce size
+      const compressedImage = await compressImage(file, 200, 0.8)
+      
+      // Update the profile data with the compressed avatar
+      setProfileData(prev => ({
+        ...prev,
+        avatar: compressedImage
+      }))
+
+      toast({
+        title: "Image uploaded!",
+        description: "Your profile picture has been updated. Don't forget to save changes.",
+      })
+      setIsUploadingImage(false)
+    } catch (error) {
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload image. Please try again.",
+        variant: "destructive",
+      })
+      setIsUploadingImage(false)
+    }
   }
 
   const handleNotificationSave = async () => {
@@ -146,12 +283,24 @@ export default function SettingsPage() {
                 <div className="flex items-center gap-6">
                   <Avatar className="w-20 h-20">
                     <AvatarImage src={profileData.avatar || "/placeholder.svg"} />
-                    <AvatarFallback className="text-2xl">{profileData.name[0]}</AvatarFallback>
+                    <AvatarFallback className="text-2xl">{profileData.name?.[0] || "U"}</AvatarFallback>
                   </Avatar>
                   <div className="space-y-2">
-                    <Button variant="outline" className="gap-2 bg-transparent">
+                    <input
+                      type="file"
+                      id="avatar-upload"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                    <Button
+                      variant="outline"
+                      className="gap-2 bg-transparent"
+                      onClick={() => document.getElementById('avatar-upload')?.click()}
+                      disabled={isUploadingImage}
+                    >
                       <Upload className="w-4 h-4" />
-                      Upload new photo
+                      {isUploadingImage ? "Uploading..." : "Upload new photo"}
                     </Button>
                     <p className="text-sm text-muted-foreground">JPG, PNG or GIF. Max size 2MB.</p>
                   </div>

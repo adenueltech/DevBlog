@@ -24,7 +24,7 @@ interface ArticleCardProps {
     }
     publishedAt: string
     readTime: number
-    tags: string[]
+    tags?: string[]
     likes: number
     comments: number
     isLiked?: boolean
@@ -38,11 +38,11 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
   const [isBookmarked, setIsBookmarked] = useState(article.isBookmarked || false)
   const [likesCount, setLikesCount] = useState(article.likes)
 
-  // Create slug from title for URL
-  const slug = article.title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "")
+  // Use article ID for URL
+  const articleUrl = `/article/${article.id}`
+  
+  // Generate user profile URL - use username directly from mock data
+  const userProfileUrl = `/user/${article.author.username}`
 
   const handleLike = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -58,10 +58,10 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
   if (variant === "featured") {
     return (
       <Card className="group overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-background to-muted/20">
-        <Link href={`/article/${slug}`}>
-          <div className="relative">
-            {article.coverImage && (
-              <div className="relative h-64 overflow-hidden">
+        <div className="relative">
+          {article.coverImage && (
+            <Link href={articleUrl}>
+              <div className="relative h-64 overflow-hidden cursor-pointer">
                 <Image
                   src={article.coverImage || "/placeholder.svg"}
                   alt={article.title}
@@ -70,45 +70,53 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
               </div>
-            )}
-            <div className="absolute top-4 left-4">
-              <Badge className="bg-primary/90 text-primary-foreground">Featured</Badge>
-            </div>
+            </Link>
+          )}
+          <div className="absolute top-4 left-4">
+            <Badge className="bg-primary/90 text-primary-foreground">Featured</Badge>
           </div>
+        </div>
 
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-3 mb-4">
-              <Avatar className="h-10 w-10">
+        <CardContent className="p-6">
+          <div className="flex items-start space-x-4 mb-4">
+            <Link href={userProfileUrl}>
+              <Avatar className="h-12 w-12 flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary transition-all">
                 <AvatarImage src={article.author.avatar || "/placeholder.svg"} />
-                <AvatarFallback>{article.author.name[0]}</AvatarFallback>
+                <AvatarFallback>{article.author.name?.[0] || "U"}</AvatarFallback>
               </Avatar>
-              <div>
-                <p className="font-medium text-sm">{article.author.name}</p>
-                <div className="flex items-center text-xs text-muted-foreground space-x-2">
-                  <span>{new Date(article.publishedAt).toLocaleDateString()}</span>
-                  <span>•</span>
-                  <div className="flex items-center">
-                    <Clock className="w-3 h-3 mr-1" />
-                    {article.readTime} min read
-                  </div>
+            </Link>
+            <div className="flex-1 min-w-0 space-y-1">
+              <Link href={userProfileUrl} className="block">
+                <p className="font-medium text-sm hover:text-primary transition-colors">{article.author.name}</p>
+              </Link>
+              <div className="flex items-center text-xs text-muted-foreground space-x-2">
+                <span>{new Date(article.publishedAt).toLocaleDateString()}</span>
+                <span>•</span>
+                <div className="flex items-center">
+                  <Clock className="w-3 h-3 mr-1" />
+                  {article.readTime} min read
                 </div>
               </div>
             </div>
+          </div>
 
-            <h2 className="text-2xl font-bold font-serif mb-3 group-hover:text-primary transition-colors line-clamp-2">
+          <Link href={articleUrl}>
+            <h2 className="text-2xl font-bold font-serif mb-3 hover:text-primary transition-colors line-clamp-2 cursor-pointer">
               {article.title}
             </h2>
-            <p className="text-muted-foreground mb-4 line-clamp-3 leading-relaxed">{article.excerpt}</p>
+          </Link>
+          <Link href={articleUrl}>
+            <p className="text-muted-foreground mb-4 line-clamp-3 leading-relaxed cursor-pointer hover:text-foreground transition-colors">{article.excerpt}</p>
+          </Link>
 
-            <div className="flex flex-wrap gap-2 mb-4">
-              {article.tags.slice(0, 3).map((tag) => (
-                <Badge key={tag} variant="secondary" className="text-xs">
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Link>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {(article.tags || []).slice(0, 3).map((tag) => (
+              <Badge key={tag} variant="secondary" className="text-xs">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        </CardContent>
 
         <CardFooter className="px-6 py-4 border-t bg-muted/20">
           <div className="flex items-center justify-between w-full">
@@ -122,7 +130,15 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
                 <Heart className={`w-4 h-4 mr-1 ${isLiked ? "fill-current" : ""}`} />
                 {likesCount}
               </Button>
-              <Button variant="ghost" size="sm" className="hover:bg-blue-50 hover:text-blue-600">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="hover:bg-blue-50 hover:text-blue-600"
+                onClick={(e) => {
+                  e.preventDefault()
+                  window.location.href = `${articleUrl}#comments`
+                }}
+              >
                 <MessageCircle className="w-4 h-4 mr-1" />
                 {article.comments}
               </Button>
@@ -148,10 +164,10 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
 
   return (
     <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 border-0 bg-card/50 backdrop-blur-sm">
-      <Link href={`/article/${slug}`}>
-        <div className="flex">
-          {article.coverImage && (
-            <div className="relative w-32 h-32 flex-shrink-0">
+      <div className="flex">
+        {article.coverImage && (
+          <Link href={articleUrl}>
+            <div className="relative w-32 h-32 flex-shrink-0 cursor-pointer">
               <Image
                 src={article.coverImage || "/placeholder.svg"}
                 alt={article.title}
@@ -159,50 +175,59 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
               />
             </div>
-          )}
+          </Link>
+        )}
 
-          <CardContent className="flex-1 p-4">
-            <div className="flex items-center space-x-2 mb-2">
-              <Avatar className="h-6 w-6">
+        <CardContent className="flex-1 p-4">
+          <div className="flex items-center space-x-3 mb-2">
+            <Link href={userProfileUrl}>
+              <Avatar className="h-8 w-8 flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary transition-all">
                 <AvatarImage src={article.author.avatar || "/placeholder.svg"} />
-                <AvatarFallback className="text-xs">{article.author.name[0]}</AvatarFallback>
+                <AvatarFallback className="text-xs">{article.author.name?.[0] || "U"}</AvatarFallback>
               </Avatar>
-              <span className="text-sm font-medium">{article.author.name}</span>
-              <span className="text-xs text-muted-foreground">•</span>
-              <span className="text-xs text-muted-foreground">
-                {new Date(article.publishedAt).toLocaleDateString()}
-              </span>
+            </Link>
+            <div className="flex-1 min-w-0">
+              <Link href={userProfileUrl}>
+                <span className="text-sm font-medium hover:text-primary transition-colors block truncate">{article.author.name}</span>
+              </Link>
+              <div className="flex items-center text-xs text-muted-foreground space-x-2">
+                <span>{new Date(article.publishedAt).toLocaleDateString()}</span>
+              </div>
             </div>
+          </div>
 
-            <h3 className="font-bold font-serif mb-2 group-hover:text-primary transition-colors line-clamp-2">
+          <Link href={articleUrl}>
+            <h3 className="font-bold font-serif mb-2 hover:text-primary transition-colors line-clamp-2 cursor-pointer">
               {article.title}
             </h3>
+          </Link>
 
-            <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{article.excerpt}</p>
+          <Link href={articleUrl}>
+            <p className="text-sm text-muted-foreground mb-3 line-clamp-2 cursor-pointer hover:text-foreground transition-colors">{article.excerpt}</p>
+          </Link>
 
-            <div className="flex items-center justify-between">
-              <div className="flex flex-wrap gap-1">
-                {article.tags.slice(0, 2).map((tag) => (
-                  <Badge key={tag} variant="secondary" className="text-xs">
-                    {tag}
-                  </Badge>
-                ))}
+          <div className="flex items-center justify-between">
+            <div className="flex flex-wrap gap-1">
+              {(article.tags || []).slice(0, 2).map((tag) => (
+                <Badge key={tag} variant="secondary" className="text-xs">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+
+            <div className="flex items-center space-x-3 text-xs text-muted-foreground">
+              <div className="flex items-center">
+                <Clock className="w-3 h-3 mr-1" />
+                {article.readTime}m
               </div>
-
-              <div className="flex items-center space-x-3 text-xs text-muted-foreground">
-                <div className="flex items-center">
-                  <Clock className="w-3 h-3 mr-1" />
-                  {article.readTime}m
-                </div>
-                <div className="flex items-center">
-                  <Heart className="w-3 h-3 mr-1" />
-                  {likesCount}
-                </div>
+              <div className="flex items-center">
+                <Heart className="w-3 h-3 mr-1" />
+                {likesCount}
               </div>
             </div>
-          </CardContent>
-        </div>
-      </Link>
+          </div>
+        </CardContent>
+      </div>
     </Card>
   )
 }
