@@ -6,7 +6,7 @@ async function bootstrap() {
   
   // Enable CORS
   app.enableCors({
-    origin: 'http://localhost:3001',
+    origin: ['https://dev-blog-three-blue.vercel.app', 'http://localhost:3000'],
     credentials: true,
   });
 
