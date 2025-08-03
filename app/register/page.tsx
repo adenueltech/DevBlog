@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
 import { Eye, EyeOff, Github, UserPlus, ArrowLeft, Check, X } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { apiClient, handleApiError } from "@/lib/api"
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -47,40 +48,28 @@ export default function RegisterPage() {
     setIsLoading(true)
 
     try {
-      const res = await fetch("http://localhost:3000/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-          name: formData.username, // Using username as name
-          username: formData.username, // Also sending as username
-        }),
+      const userData = {
+        email: formData.email,
+        password: formData.password,
+        name: formData.username, // Using username as name
+        username: formData.username, // Also sending as username
+      }
+
+      await apiClient.register(userData)
+      
+      toast({
+        title: "Account created!",
+        description: "Welcome to DevBlog! You can now start writing and reading amazing content.",
       })
 
-      if (res.ok) {
-        const data = await res.json()
-        toast({
-          title: "Account created!",
-          description: "Welcome to DevBlog! You can now start writing and reading amazing content.",
-        })
-
-        // Redirect to login page after successful registration
-        setTimeout(() => {
-          router.push("/login")
-        }, 1000)
-      } else {
-        const errorData = await res.json().catch(() => ({}))
-        toast({
-          title: "Registration failed",
-          description: errorData.message || "Failed to create account. Please try again.",
-          variant: "destructive",
-        })
-      }
+      // Redirect to login page after successful registration
+      setTimeout(() => {
+        router.push("/login")
+      }, 1000)
     } catch (error) {
       toast({
         title: "Registration failed",
-        description: "Network error. Please try again.",
+        description: handleApiError(error),
         variant: "destructive",
       })
     }

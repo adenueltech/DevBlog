@@ -5,6 +5,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { Footer } from "@/components/footer"
+import { ErrorBoundary } from "@/components/ui/error-boundary"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" })
@@ -26,10 +27,12 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${playfair.variable} font-sans antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange={false}>
-          <div className="flex flex-col min-h-screen">
-            <main className="flex-1">{children}</main>
-            <Footer />
-          </div>
+          <ErrorBoundary>
+            <div className="flex flex-col min-h-screen">
+              <main className="flex-1">{children}</main>
+              <Footer />
+            </div>
+          </ErrorBoundary>
           <Toaster />
         </ThemeProvider>
       </body>

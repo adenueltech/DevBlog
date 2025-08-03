@@ -8,22 +8,23 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TrendingUp, Clock, Star, Filter } from "lucide-react"
+import { apiClient } from "@/lib/api"
+import { LoadingCard } from "@/components/ui/loading"
 
 // Hook to fetch articles from backend
 function useArticles() {
-  const [articles, setArticles] = useState([])
+  const [articles, setArticles] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function fetchArticles() {
       try {
-        const response = await fetch("http://localhost:3000/articles")
-        if (response.ok) {
-          const data = await response.json()
-          setArticles(data)
-        }
+        const data = await apiClient.getArticles()
+        setArticles(Array.isArray(data) ? data : [])
       } catch (error) {
         console.error("Error fetching articles:", error)
+        // Keep articles as empty array on error
+        setArticles([])
       } finally {
         setLoading(false)
       }
@@ -145,11 +146,26 @@ export default function HomePage() {
     return (
       <div className="min-h-screen pt-24 bg-background">
         <Navbar />
-        <div className="container mx-auto px-4 pt-24">
-          <div className="text-center">
-            <div className="text-lg">Loading articles...</div>
-          </div>
+        
+        {/* Hero Section Skeleton */}
+        <div className="pt-16">
+          <HeroSection />
         </div>
+
+        {/* Loading Articles */}
+        <section className="py-16">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-3xl font-bold font-serif">Latest Articles</h2>
+            </div>
+            
+            <div className="grid gap-6">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <LoadingCard key={i} />
+              ))}
+            </div>
+          </div>
+        </section>
       </div>
     )
   }

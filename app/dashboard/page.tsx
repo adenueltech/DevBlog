@@ -22,6 +22,8 @@ import {
   Calendar,
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { apiClient, handleApiError, isAuthenticated } from "@/lib/api"
+import { LoadingPage, ErrorMessage } from "@/components/ui/loading"
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
@@ -31,6 +33,7 @@ function useUserDashboardData() {
   const [userArticles, setUserArticles] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshKey, setRefreshKey] = useState(0)
+  const router = useRouter()
 
   // Function to refresh data
   const refreshData = () => {
@@ -40,44 +43,35 @@ function useUserDashboardData() {
   useEffect(() => {
     async function fetchData() {
       setLoading(true)
+      
+      // Check if user is authenticated
+      if (!isAuthenticated()) {
+        router.push('/login')
+        return
+      }
+
       try {
-        const token = localStorage.getItem("access_token");
-        if (!token) {
-          setUserData(null);
-          setLoading(false);
-          return;
-        }
+        // Fetch user data
+        const user = await apiClient.getCurrentUser()
+        setUserData(user)
 
-        // Fetch user data with JWT token
-        const userRes = await fetch("http://localhost:3000/users/me", {
-          headers: {
-            "Authorization": `Bearer ${token}`,
-          },
-        })
-        if (userRes.ok) {
-          const user = await userRes.json()
-          setUserData(user)
-        }
-
-        // Fetch user articles with JWT token
-        const articlesRes = await fetch("http://localhost:3000/users/me/articles", {
-          headers: {
-            "Authorization": `Bearer ${token}`,
-          },
-        })
-        if (articlesRes.ok) {
-          let articles = await articlesRes.json()
-          if (!Array.isArray(articles)) articles = [];
-          setUserArticles(articles)
-        }
+        // Fetch user articles
+        const articles = await apiClient.getUserArticles()
+        setUserArticles(Array.isArray(articles) ? articles : [])
       } catch (error) {
-        console.error("Error fetching dashboard data:", error);
-        setUserData(null);
+        console.error("Error fetching dashboard data:", error)
+        // If unauthorized, redirect to login
+        if (error instanceof Error && error.message.includes('401')) {
+          localStorage.removeItem('access_token')
+          router.push('/login')
+        } else {
+          setUserData(null)
+        }
       }
       setLoading(false)
     }
     fetchData()
-  }, [refreshKey])
+  }, [refreshKey, router])
 
   return { userData, userArticles, loading, refreshData }
 }
@@ -99,10 +93,19 @@ export default function DashboardPage() {
   }, [refreshData])
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
+    return <LoadingPage text="Loading your dashboard..." />
   }
+  
   if (!userData) {
-    return <div className="min-h-screen flex items-center justify-center text-red-500">User not found or not authenticated.</div>
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <ErrorMessage
+          title="Authentication Required"
+          message="Please log in to access your dashboard."
+          onRetry={() => window.location.href = '/login'}
+        />
+      </div>
+    )
   }
 
   const publishedArticles = userArticles.filter((article) => article.status === "published")

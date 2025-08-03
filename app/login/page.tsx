@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
 import { Eye, EyeOff, Github, Mail, ArrowLeft } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { apiClient, handleApiError } from "@/lib/api"
 
 import { useEffect } from "react"
 
@@ -29,12 +30,9 @@ export default function LoginPage() {
   useEffect(() => {
     async function checkAuth() {
       try {
-        const res = await fetch("http://localhost:3000/api/user", { credentials: "include" })
-        if (res.ok) {
-          const user = await res.json()
-          if (user && user.id) {
-            router.replace("/dashboard")
-          }
+        const user = await apiClient.getCurrentUser()
+        if (user && user.id) {
+          router.replace("/dashboard")
         }
       } catch (err) {
         // Not authenticated, do nothing
@@ -48,38 +46,24 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      const res = await fetch("http://localhost:3000/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+      const data = await apiClient.login(formData)
+      
+      // Store the JWT token in localStorage
+      localStorage.setItem("access_token", data.access_token)
+      
+      toast({
+        title: "Welcome back!",
+        description: "You have been successfully logged in.",
       })
 
-      if (res.ok) {
-        const data = await res.json()
-        // Store the JWT token in localStorage
-        localStorage.setItem("access_token", data.access_token)
-        
-        toast({
-          title: "Welcome back!",
-          description: "You have been successfully logged in.",
-        })
-
-        // Redirect to dashboard after successful login
-        setTimeout(() => {
-          router.push("/dashboard")
-        }, 1000)
-      } else {
-        const errorData = await res.json().catch(() => ({}))
-        toast({
-          title: "Login failed",
-          description: errorData.message || "Invalid credentials",
-          variant: "destructive",
-        })
-      }
+      // Redirect to dashboard after successful login
+      setTimeout(() => {
+        router.push("/dashboard")
+      }, 1000)
     } catch (error) {
       toast({
         title: "Login failed",
-        description: "Network error. Please try again.",
+        description: handleApiError(error),
         variant: "destructive",
       })
     }

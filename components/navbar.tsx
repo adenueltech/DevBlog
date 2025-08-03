@@ -16,6 +16,7 @@ import {
 import { Search, PenTool, User, Settings, LogOut, Moon, Sun, Menu, X } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useToast } from "@/hooks/use-toast"
+import { apiClient, isAuthenticated, logout } from "@/lib/api"
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
@@ -31,30 +32,22 @@ export function Navbar() {
   useEffect(() => {
     async function checkAuth() {
       try {
-        const token = localStorage.getItem("access_token");
-        if (!token) {
+        if (!isAuthenticated()) {
           setIsLoggedIn(false);
           setUserData(null);
           return;
         }
         
-        const res = await fetch("http://localhost:3000/users/me", {
-          headers: {
-            "Authorization": `Bearer ${token}`,
-          },
-        });
-        
-        if (res.ok) {
-          const user = await res.json();
-          setIsLoggedIn(true);
-          setUserData(user);
-        } else {
-          setIsLoggedIn(false);
-          setUserData(null);
-        }
-      } catch {
+        const user = await apiClient.getCurrentUser();
+        setIsLoggedIn(true);
+        setUserData(user);
+      } catch (error) {
         setIsLoggedIn(false);
         setUserData(null);
+        // If unauthorized, clear the token
+        if (error instanceof Error && error.message.includes('401')) {
+          localStorage.removeItem('access_token');
+        }
       }
     }
     checkAuth();
@@ -69,14 +62,13 @@ export function Navbar() {
   }, [])
 
   const handleLogout = () => {
-    // Clear the JWT token from localStorage
-    localStorage.removeItem("access_token")
+    logout()
     setIsLoggedIn(false)
+    setUserData(null)
     toast({
       title: "Logged out",
       description: "You have been successfully logged out.",
     })
-    router.push("/")
   }
 
   return (
